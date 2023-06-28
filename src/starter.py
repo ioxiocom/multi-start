@@ -55,7 +55,7 @@ def debug_msg(msg: str) -> None:
     :param msg: Message to print
     """
     if os.environ.get("DEBUG"):
-        print(str)
+        print(msg)
 
 
 async def run_and_wait(cmd, cwd=None):
