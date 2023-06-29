@@ -113,13 +113,14 @@ async def setup_nginx() -> None:
             os.environ["HTTP_BASIC_AUTH_REALM"] = "Private area"
 
     for f in ["/etc/nginx/conf.d/default.conf", "/etc/nginx/dataspace-headers.conf"]:
+        path = Path(f)
         final_config = await get_output(["parse-template", f])
-        Path(f).write_bytes(final_config)
+        path.write_bytes(final_config)
         print(f"{f} is generated")
 
         if os.environ.get("NGINX_DEBUG"):
             print(f"=== {f} ===")
-            print(Path(f).read_text("utf8") + "\n")
+            print(path.read_text("utf8") + "\n")
 
 
 async def start_service(svc: Service, extra_env: Optional[dict] = None) -> Process:
@@ -143,19 +144,19 @@ async def wait_for_service(svc: Service, timeout: int):
     if not svc.socket and not svc.port:
         raise RuntimeError("Either socket or port should be defined")
 
-    url = "http://localhost"
-    transport = httpx.AsyncHTTPTransport(uds=svc.socket)
-
     if svc.port:
+        url = f"http://localhost:{svc.port}"
         transport = httpx.AsyncHTTPTransport()
-        url += f":{svc.port}"
+    else:
+        url = "http://localhost"
+        transport = httpx.AsyncHTTPTransport(uds=svc.socket)
 
     async with httpx.AsyncClient(transport=transport) as client:
         wait_step = 0.3
         max_attempts = int(timeout / wait_step)
         for _ in range(max_attempts):
             try:
-                await client.get(url)
+                await client.get(url, timeout=timeout)
             except httpx.ConnectError:
                 await asyncio.sleep(wait_step)
             else:
