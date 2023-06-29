@@ -8,7 +8,7 @@ inside a single container. This tool may help with:
 - Prepare final Nginx configs using
   [parse-template](https://github.com/cocreators-ee/parse-template)
 - Wait until backend and frontend start responding before running Nginx
-- Stop every process if one of them is shut down so a container stops gracefully
+- Stop every process if one of them exits so the whole container stops gracefully
 
 ## Installation
 
