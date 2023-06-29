@@ -24,7 +24,12 @@ class RunConfig(BaseModel):
     svc_wait_time: int
 
 
-async def run(cmd, cwd=None, pipe_output=False, extra_env=None) -> Process:
+async def run(
+    cmd: List[str],
+    cwd: Optional[str] = None,
+    pipe_output=False,
+    extra_env: Optional[dict] = None,
+) -> Process:
     """
     Run a process
     :param cmd: Command to run
@@ -58,14 +63,14 @@ def debug_msg(msg: str) -> None:
         print(msg)
 
 
-async def run_and_wait(cmd, cwd=None):
+async def run_and_wait(cmd: List[str], cwd: Optional[str] = None):
     proc = await run(cmd, cwd)
     code = await proc.wait()
     if code != 0:
         raise RuntimeError(f"{cmd} failed with code {code}")
 
 
-async def get_output(cmd, cwd=None) -> bytes:
+async def get_output(cmd: List[str], cwd: Optional[str] = None) -> bytes:
     """
     Run command and get its stdout if completed successfully
     :param cmd: Command to run
@@ -79,7 +84,7 @@ async def get_output(cmd, cwd=None) -> bytes:
     return out
 
 
-async def stop_process(proc: Process, timeout=3.0) -> None:
+async def stop_process(proc: Process, timeout: float = 3.0) -> None:
     """
     Try to stop the process gracefully, otherwise killing it
     :param proc: Process to stop
