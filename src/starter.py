@@ -186,7 +186,7 @@ class Runner:
                 frontend, extra_env={"PORT": str(frontend.port)}
             )
             procs.append(frontend_svc)
-            prerequisites.append(wait_for_service(frontend, backend.timeout))
+            prerequisites.append(wait_for_service(frontend, frontend.timeout))
 
         if nginx:
             prerequisites.append(setup_nginx())
