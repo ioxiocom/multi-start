@@ -27,7 +27,7 @@ def main(
         help="Command to start backend service",
     ),
     backend_dir: str = typer.Option(
-        default=".",
+        default="backend",
         help="Working directory for the backend",
     ),
     backend_port: Optional[int] = typer.Option(
@@ -51,7 +51,7 @@ def main(
         help="Command to start frontend service",
     ),
     frontend_dir: str = typer.Option(
-        default="../frontend",
+        default="frontend",
         help="Working directory for the frontend",
     ),
     nginx: bool = typer.Option(

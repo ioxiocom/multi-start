@@ -38,7 +38,7 @@ Options:
   --backend-cmd TEXT              Command to start backend service  [default:
                                   poetry run invoke serve]
   --backend-dir TEXT              Working directory for the backend  [default:
-                                  .]
+                                  backend]
   --backend-port INTEGER          Port number that backend is running at if
                                   port is used
   --backend-socket TEXT           UNIX socket path that backend is running at
@@ -51,7 +51,7 @@ Options:
   --frontend-cmd TEXT             Command to start frontend service  [default:
                                   pnpm run start]
   --frontend-dir TEXT             Working directory for the frontend
-                                  [default: ../frontend]
+                                  [default: frontend]
   --nginx / --no-nginx            Enable nginx  [default: no-nginx]
   --nginx-cmd TEXT                Command to start Nginx  [default: nginx -g
                                   "daemon off;"]
