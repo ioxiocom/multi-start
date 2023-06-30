@@ -97,11 +97,9 @@ async def setup_nginx() -> None:
     """
     if user := os.environ.get("HTTP_BASIC_AUTH_USER"):
         pwd = os.environ["HTTP_BASIC_AUTH_PASSWORD"]
-        realm = os.environ.get("HTTP_BASIC_AUTH_REALM", "Private area")
-        await run_and_wait(
-            ["htpasswd", "-b", "-c", "/run/nginx/.htpasswd", user, pwd],
-            extra_env={"HTTP_BASIC_AUTH_REALM": realm},
-        )
+        await run_and_wait(["htpasswd", "-b", "-c", "/run/nginx/.htpasswd", user, pwd])
+        if not os.environ.get("HTTP_BASIC_AUTH_REALM"):
+            os.environ["HTTP_BASIC_AUTH_REALM"] = "Private area"
 
     for f in ["/etc/nginx/conf.d/default.conf", "/etc/nginx/dataspace-headers.conf"]:
         path = Path(f)
