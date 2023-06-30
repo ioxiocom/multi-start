@@ -15,13 +15,7 @@ class Service(BaseModel):
     cwd: str
     socket: Optional[str]
     port: Optional[int]
-
-
-class RunConfig(BaseModel):
-    backend: Optional[Service]
-    frontend: Optional[Service]
-    nginx: Optional[Service]
-    svc_wait_time: int
+    timeout: float
 
 
 async def run(
@@ -43,8 +37,7 @@ async def run(
         env.update(extra_env)
 
     proc = await asyncio.create_subprocess_exec(
-        cmd[0],
-        *cmd[1:],
+        *cmd,
         stdout=asyncio.subprocess.PIPE if pipe_output else sys.stdout,
         stderr=asyncio.subprocess.PIPE if pipe_output else sys.stderr,
         cwd=cwd,
@@ -63,8 +56,10 @@ def debug_msg(msg: str) -> None:
         print(msg)
 
 
-async def run_and_wait(cmd: List[str], cwd: Optional[str] = None):
-    proc = await run(cmd, cwd)
+async def run_and_wait(
+    cmd: List[str], cwd: Optional[str] = None, extra_env: Optional[dict] = None
+):
+    proc = await run(cmd, cwd, extra_env=extra_env)
     code = await proc.wait()
     if code != 0:
         raise RuntimeError(f"{cmd} failed with code {code}")
@@ -108,9 +103,11 @@ async def setup_nginx() -> None:
     """
     if user := os.environ.get("HTTP_BASIC_AUTH_USER"):
         pwd = os.environ["HTTP_BASIC_AUTH_PASSWORD"]
-        await run_and_wait(["htpasswd", "-b", "-c", "/run/nginx/.htpasswd", user, pwd])
-        if not os.environ.get("HTTP_BASIC_AUTH_REALM"):
-            os.environ["HTTP_BASIC_AUTH_REALM"] = "Private area"
+        realm = os.environ.get("HTTP_BASIC_AUTH_REALM", "Private area")
+        await run_and_wait(
+            ["htpasswd", "-b", "-c", "/run/nginx/.htpasswd", user, pwd],
+            extra_env={"HTTP_BASIC_AUTH_REALM": realm},
+        )
 
     for f in ["/etc/nginx/conf.d/default.conf", "/etc/nginx/dataspace-headers.conf"]:
         path = Path(f)
@@ -134,7 +131,7 @@ async def start_service(svc: Service, extra_env: Optional[dict] = None) -> Proce
     return await run(svc.cmd, cwd=svc.cwd, extra_env=extra_env)
 
 
-async def wait_for_service(svc: Service, timeout: int):
+async def wait_for_service(svc: Service, timeout: float):
     """
     Wait until a service and up and listening for either a port or socket.
     Port takes precedence over a socket if both defined.
@@ -168,41 +165,44 @@ async def wait_for_service(svc: Service, timeout: int):
 
 
 class Runner:
-    def __init__(self, cfg: RunConfig):
-        self.cfg = cfg
+    def __init__(self):
         self._stop = asyncio.Event()
 
     def stop(self, *args):
         self._stop.set()
 
-    async def start(self):
+    async def start(
+        self,
+        backend: Optional[Service],
+        frontend: Optional[Service],
+        nginx: Optional[Service],
+    ):
         # Handle Ctrl+C gracefully by stopping all running services
         loop = asyncio.get_running_loop()
         loop.add_signal_handler(signal.SIGINT, self.stop)
         loop.add_signal_handler(signal.SIGTERM, self.stop)
-        cfg = self.cfg
 
         prerequisites = []
         procs = []
 
-        if cfg.backend:
-            procs.append(await start_service(cfg.backend))
-            prerequisites.append(wait_for_service(cfg.backend, cfg.svc_wait_time))
+        if backend:
+            procs.append(await start_service(backend))
+            prerequisites.append(wait_for_service(backend, backend.timeout))
 
-        if cfg.frontend:
+        if frontend:
             frontend_svc = await start_service(
-                cfg.frontend, extra_env={"PORT": str(cfg.frontend.port)}
+                frontend, extra_env={"PORT": str(frontend.port)}
             )
             procs.append(frontend_svc)
-            prerequisites.append(wait_for_service(cfg.frontend, cfg.svc_wait_time))
+            prerequisites.append(wait_for_service(frontend, backend.timeout))
 
-        if cfg.nginx:
+        if nginx:
             prerequisites.append(setup_nginx())
 
         await asyncio.gather(*prerequisites)
 
-        if cfg.nginx:
-            procs.append(await start_service(cfg.nginx))
+        if nginx:
+            procs.append(await start_service(nginx))
 
         tasks = [p.wait() for p in procs]
         tasks.append(self._stop.wait())

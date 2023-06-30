@@ -5,7 +5,7 @@ from typing import Optional
 import typer
 from typer import Typer
 
-from .starter import RunConfig, Runner, Service
+from .starter import Runner, Service
 
 cli = Typer()
 
@@ -64,29 +64,37 @@ def main(
     if not any([backend, frontend, nginx]):
         raise RuntimeError("At least one service must be enabled")
 
-    cfg = RunConfig(
-        backend=Service(
+    backend_service = None
+    if backend:
+        backend_service = Service(
             cmd=shlex.split(backend_cmd),
             cwd=backend_dir,
             port=backend_port,
             socket=backend_socket,
+            timeout=service_wait_time,
         )
-        if backend
-        else None,
-        frontend=Service(
+
+    frontend_service = None
+    if frontend:
+        frontend_service = Service(
             cmd=shlex.split(frontend_cmd),
             cwd=frontend_dir,
             port=frontend_port,
+            timeout=service_wait_time,
         )
-        if frontend
-        else None,
-        nginx=Service(
+
+    nginx_service = None
+    if nginx:
+        nginx_service = Service(
             cmd=shlex.split(nginx_cmd),
             cwd=".",
+            timeout=service_wait_time,
         )
-        if nginx
-        else None,
-        svc_wait_time=service_wait_time,
-    )
 
-    asyncio.run(Runner(cfg).start())
+    asyncio.run(
+        Runner().start(
+            backend=backend_service,
+            frontend=frontend_service,
+            nginx=nginx_service,
+        )
+    )
