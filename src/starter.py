@@ -3,19 +3,22 @@ import os
 import signal
 import sys
 from asyncio.subprocess import Process
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
 import httpx
-from pydantic import BaseModel
+
+from .log import logger
 
 
-class Service(BaseModel):
+@dataclass
+class Service:
     cmd: List[str]
     cwd: str
-    socket: Optional[str]
-    port: Optional[int]
     timeout: float
+    socket: Optional[str] = None
+    port: Optional[int] = None
 
 
 async def run(
@@ -45,15 +48,6 @@ async def run(
     )
 
     return proc
-
-
-def debug_msg(msg: str) -> None:
-    """
-    Print message only when DEBUG environment variable is set
-    :param msg: Message to print
-    """
-    if os.environ.get("DEBUG"):
-        print(msg)
 
 
 async def run_and_wait(
@@ -113,11 +107,11 @@ async def setup_nginx() -> None:
         path = Path(f)
         final_config = await get_output(["parse-template", f])
         path.write_bytes(final_config)
-        print(f"{f} is generated")
+        logger.info(f"{f} is generated")
 
         if os.environ.get("NGINX_DEBUG"):
-            print(f"=== {f} ===")
-            print(path.read_text("utf8") + "\n")
+            logger.info(f"=== {f} ===")
+            logger.info(path.read_text("utf8") + "\n")
 
 
 async def start_service(svc: Service, extra_env: Optional[dict] = None) -> Process:
@@ -127,7 +121,7 @@ async def start_service(svc: Service, extra_env: Optional[dict] = None) -> Proce
     :param extra_env: Extra environment variables
     :return: Process
     """
-    debug_msg(f"Starting service: {svc.cmd}")
+    logger.debug(f"Starting service: {svc.cmd}")
     return await run(svc.cmd, cwd=svc.cwd, extra_env=extra_env)
 
 
@@ -157,10 +151,10 @@ async def wait_for_service(svc: Service, timeout: float):
             except httpx.ConnectError:
                 await asyncio.sleep(wait_step)
             else:
-                debug_msg(f"Connection established: {url}")
+                logger.debug(f"Connection established: {url}")
                 break
         else:
-            print("Service is not responding", svc)
+            logger.error("Service is not responding", svc)
             raise TimeoutError("Service is not responding")
 
 
@@ -208,5 +202,5 @@ class Runner:
         tasks.append(self._stop.wait())
         await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
-        print("Shutting down all processes")
+        logger.info("Shutting down all processes")
         await asyncio.gather(*[stop_process(proc) for proc in procs])

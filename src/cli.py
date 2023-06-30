@@ -5,12 +5,18 @@ from typing import Optional
 import typer
 from typer import Typer
 
+from .log import logger
 from .starter import Runner, Service
 
 cli = Typer()
 
 
-@cli.command()
+@cli.command(
+    help=(
+        "Run multiple services at once. "
+        "Set DEBUG environment variable to 1 for more verbose output when running."
+    )
+)
 def main(
     backend: bool = typer.Option(
         default=False,
@@ -56,13 +62,14 @@ def main(
         default='nginx -g "daemon off;"',
         help="Command to start Nginx",
     ),
-    service_wait_time: int = typer.Option(
-        default=3,
+    service_wait_time: float = typer.Option(
+        default=3.0,
         help="How long to wait for a service to be up an running (sec)",
     ),
 ):
     if not any([backend, frontend, nginx]):
-        raise RuntimeError("At least one service must be enabled")
+        logger.error("At least one service must be enabled")
+        raise typer.Exit(1)
 
     backend_service = None
     if backend:

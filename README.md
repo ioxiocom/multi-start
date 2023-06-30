@@ -24,6 +24,37 @@ pip install multi-start
 
 ## Usage
 
-```shell
+```
 multi-start --help
+
+Usage: multi-start [OPTIONS]
+
+  Run multiple services at once. Set DEBUG environment variable to 1 for more
+  verbose output when running.
+
+Options:
+  --backend / --no-backend        Enable backend service  [default: no-
+                                  backend]
+  --backend-cmd TEXT              Command to start backend service  [default:
+                                  poetry run invoke serve]
+  --backend-dir TEXT              Working directory for the backend  [default:
+                                  .]
+  --backend-port INTEGER          Port number that backend is running at if
+                                  port is used
+  --backend-socket TEXT           UNIX socket path that backend is running at
+                                  if socket is used  [default:
+                                  /run/nginx/uvicorn.sock]
+  --frontend / --no-frontend      Enable frontend service  [default: no-
+                                  frontend]
+  --frontend-port INTEGER         Port number that frontend is running at
+                                  [default: 3000]
+  --frontend-cmd TEXT             Command to start frontend service  [default:
+                                  pnpm run start]
+  --frontend-dir TEXT             Working directory for the frontend
+                                  [default: ../frontend]
+  --nginx / --no-nginx            Enable nginx  [default: no-nginx]
+  --nginx-cmd TEXT                Command to start Nginx  [default: nginx -g
+                                  "daemon off;"]
+  --service-wait-time FLOAT       How long to wait for a service to be up an
+                                  running (sec)  [default: 3.0]
 ```
