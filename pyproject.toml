@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "multi-start"
-version = "0.0.3"
+version = "1.0.0"
 description = "Run multiple services inside a docker container"
 license = "BSD-3-Clause"
 readme = "README.md"
