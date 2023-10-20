@@ -58,3 +58,21 @@ Options:
   --service-wait-time FLOAT       How long to wait for a service to be up an
                                   running (sec)  [default: 3.0]
 ```
+
+## Development
+
+Make sure you install [pre-commit](https://pre-commit.com/#install) and run:
+
+```shell
+pre-commit install
+```
+
+For testing you can use e.g.
+
+```shell
+poetry run multi-start \
+  --backend \
+  --backend-dir ../another-project/src \
+  --backend-cmd "poetry run invoke dev" \
+  --backend-port 8080
+```

@@ -196,9 +196,12 @@ class Runner:
         if nginx:
             procs.append(await start_service(nginx))
 
-        tasks = [p.wait() for p in procs]
-        tasks.append(self._stop.wait())
-        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-
-        logger.info("Shutting down all processes")
-        await asyncio.gather(*[stop_process(proc) for proc in procs])
+        try:
+            tasks = [asyncio.create_task(p.wait()) for p in procs]
+            tasks.append(asyncio.create_task(self._stop.wait()))
+            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        finally:
+            logger.info("Shutting down all processes")
+            await asyncio.gather(
+                *[asyncio.create_task(stop_process(proc)) for proc in procs]
+            )
