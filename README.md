@@ -59,7 +59,6 @@ Options:
                                   running (sec)  [default: 3.0]
 ```
 
-
 ## Development
 
 Make sure you install [pre-commit](https://pre-commit.com/#install) and run:

@@ -202,4 +202,6 @@ class Runner:
             await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         finally:
             logger.info("Shutting down all processes")
-            await asyncio.gather(*[asyncio.create_task(stop_process(proc)) for proc in procs])
+            await asyncio.gather(
+                *[asyncio.create_task(stop_process(proc)) for proc in procs]
+            )
