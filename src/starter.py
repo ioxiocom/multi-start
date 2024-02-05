@@ -123,12 +123,13 @@ async def start_service(svc: Service, extra_env: Optional[dict] = None) -> Proce
     return await run(svc.cmd, cwd=svc.cwd, extra_env=extra_env)
 
 
-async def wait_for_service(svc: Service, timeout: float):
+async def wait_for_service(svc: Service, timeout: float, name: str):
     """
     Wait until a service and up and listening for either a port or socket.
     Port takes precedence over a socket if both defined.
     :param svc: Service to wait for
     :param timeout: How long to wait in seconds
+    :param name: How to describe the service in exceptions
     """
     if not svc.socket and not svc.port:
         raise RuntimeError("Either socket or port should be defined")
@@ -146,14 +147,20 @@ async def wait_for_service(svc: Service, timeout: float):
         for _ in range(max_attempts):
             try:
                 await client.get(url, timeout=timeout)
-            except httpx.ConnectError:
+            except (
+                httpx.NetworkError,
+                httpx.TimeoutException,
+                httpx.HTTPStatusError,
+            ) as e:
+                logger.debug(f"Caught {type(e).__name__} from {url}")
                 await asyncio.sleep(wait_step)
             else:
                 logger.debug(f"Connection established: {url}")
                 break
         else:
-            logger.error("Service is not responding", svc)
-            raise TimeoutError("Service is not responding")
+            raise TimeoutError(
+                f"{name.capitalize()} service is not responding, aborting..."
+            )
 
 
 class Runner:
@@ -179,19 +186,25 @@ class Runner:
 
         if backend:
             procs.append(await start_service(backend))
-            prerequisites.append(wait_for_service(backend, backend.timeout))
+            prerequisites.append(wait_for_service(backend, backend.timeout, "backend"))
 
         if frontend:
             frontend_svc = await start_service(
                 frontend, extra_env={"PORT": str(frontend.port)}
             )
             procs.append(frontend_svc)
-            prerequisites.append(wait_for_service(frontend, frontend.timeout))
+            prerequisites.append(
+                wait_for_service(frontend, frontend.timeout, "frontend")
+            )
 
         if nginx:
             prerequisites.append(setup_nginx())
 
-        await asyncio.gather(*prerequisites)
+        try:
+            await asyncio.gather(*prerequisites)
+        except TimeoutError as e:
+            logger.error(str(e))
+            return
 
         if nginx:
             procs.append(await start_service(nginx))
