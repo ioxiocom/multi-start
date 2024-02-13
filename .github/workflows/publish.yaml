@@ -1,4 +1,4 @@
-name: Build and upload to PyPI
+name: Build and publish to PyPI
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - "*"
 
 jobs:
-  build_and_upload:
+  build:
     name: Build and upload
     runs-on: ubuntu-latest
     steps:
@@ -27,10 +27,28 @@ jobs:
       - name: Run pre-commit 🤔
         run: pre-commit run --all-files
 
+      - name: Build the package 📦
+        run: poetry build
+
+      - name: Publish build artifact ⬆️
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        with:
+          name: package-dist
+          path: dist
+  publish:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    environment: PyPI
+    permissions:
+      # this permission is mandatory for trusted publishing
+      id-token: write
+    steps:
+      - name: Download build artifact ⬇️
+        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe #v4.1.2
+        with:
+          name: package-dist
+          path: dist
+
       - name: Publish package to PyPI 🙌
-        run: |
-          set -e
-          poetry config http-basic.pypi "__token__" "${PYPI_TOKEN}"
-          poetry publish --build
-        env:
-          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf #v1.8.11
