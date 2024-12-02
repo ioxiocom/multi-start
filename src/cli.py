@@ -71,19 +71,15 @@ def main(
         help="Enable praga",
     ),
     praga_cmd: str = typer.Option(
-        default="poetry run invoke serve",
-        help="Command to start praga",
-    ),
-    praga_dir: str = typer.Option(
         default="praga",
-        help="Working directory for praga",
+        help="Command to start praga",
     ),
     praga_port: Optional[int] = typer.Option(
         default=None,
         help="Port number that praga is running at if port is used",
     ),
     praga_socket: str = typer.Option(
-        default="/run/nginx/uvicorn.sock",
+        default="/run/nginx/praga.sock",
         help="UNIX socket path that praga is running at if socket is used",
     ),
 ):
@@ -122,7 +118,7 @@ def main(
     if praga:
         praga_service = Service(
             cmd=shlex.split(praga_cmd),
-            cwd=praga_dir,
+            cwd=".",
             port=praga_port,
             socket=praga_socket,
             timeout=service_wait_time,
