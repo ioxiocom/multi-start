@@ -175,6 +175,7 @@ class Runner:
         backend: Optional[Service],
         frontend: Optional[Service],
         nginx: Optional[Service],
+        praga: Optional[Service],
     ):
         # Handle Ctrl+C gracefully by stopping all running services
         loop = asyncio.get_running_loop()
@@ -196,6 +197,10 @@ class Runner:
             prerequisites.append(
                 wait_for_service(frontend, frontend.timeout, "frontend")
             )
+
+        if praga:
+            procs.append(await start_service(praga))
+            prerequisites.append(wait_for_service(praga, praga.timeout, "praga"))
 
         if nginx:
             prerequisites.append(setup_nginx())
