@@ -83,7 +83,7 @@ def main(
         help="UNIX socket path that praga is running at if socket is used",
     ),
 ):
-    if not any([backend, frontend, nginx]):
+    if not any([backend, frontend, nginx, praga]):
         logger.error("At least one service must be enabled")
         raise typer.Exit(1)
 
