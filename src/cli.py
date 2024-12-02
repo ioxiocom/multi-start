@@ -71,7 +71,7 @@ def main(
         help="Enable praga",
     ),
     praga_cmd: str = typer.Option(
-        default="praga",
+        default="praga --config=/etc/praga.yaml",
         help="Command to start praga",
     ),
     praga_port: Optional[int] = typer.Option(
