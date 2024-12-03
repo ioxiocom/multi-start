@@ -66,8 +66,24 @@ def main(
         default=3.0,
         help="How long to wait for a service to be up an running (sec)",
     ),
+    praga: bool = typer.Option(
+        default=False,
+        help="Enable praga",
+    ),
+    praga_cmd: str = typer.Option(
+        default="praga --config=/etc/praga.yaml",
+        help="Command to start praga",
+    ),
+    praga_port: Optional[int] = typer.Option(
+        default=None,
+        help="Port number that praga is running at if port is used",
+    ),
+    praga_socket: str = typer.Option(
+        default="/run/nginx/praga.sock",
+        help="UNIX socket path that praga is running at if socket is used",
+    ),
 ):
-    if not any([backend, frontend, nginx]):
+    if not any([backend, frontend, nginx, praga]):
         logger.error("At least one service must be enabled")
         raise typer.Exit(1)
 
@@ -98,10 +114,21 @@ def main(
             timeout=service_wait_time,
         )
 
+    praga_service = None
+    if praga:
+        praga_service = Service(
+            cmd=shlex.split(praga_cmd),
+            cwd=".",
+            port=praga_port,
+            socket=praga_socket,
+            timeout=service_wait_time,
+        )
+
     asyncio.run(
         Runner().start(
             backend=backend_service,
             frontend=frontend_service,
             nginx=nginx_service,
+            praga=praga_service,
         )
     )
