@@ -103,13 +103,14 @@ async def setup_nginx() -> None:
 
     for f in ["/etc/nginx/conf.d/default.conf", "/etc/nginx/dataspace-headers.conf"]:
         path = Path(f)
-        final_config = await get_output(["parse-template", f])
-        path.write_bytes(final_config)
-        logger.info(f"{f} is generated")
+        if path.exists():
+            final_config = await get_output(["parse-template", f])
+            path.write_bytes(final_config)
+            logger.info(f"{f} is generated")
 
-        if os.environ.get("NGINX_DEBUG"):
-            logger.info(f"=== {f} ===")
-            logger.info(path.read_text("utf8") + "\n")
+            if os.environ.get("NGINX_DEBUG"):
+                logger.info(f"=== {f} ===")
+                logger.info(path.read_text("utf8") + "\n")
 
 
 async def start_service(svc: Service, extra_env: Optional[dict] = None) -> Process:
